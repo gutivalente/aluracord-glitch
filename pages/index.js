@@ -1,34 +1,7 @@
-import { Box, Button, Text, TextField, Image } from '@skynexui/components';
+import { Box, Button, Image, Text, TextField } from '@skynexui/components';
+import { useRouter } from 'next/router';
+import React from 'react';
 import appConfig from '../config.json';
-
-function GlobalStyle() {
-  return (
-    <style global jsx>{`
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        list-style: none;
-      }
-      body {
-        font-family: 'Open Sans', sans-serif;
-      }
-      /* App fit Height */ 
-      html, body, #__next {
-        min-height: 100vh;
-        display: flex;
-        flex: 1;
-      }
-      #__next {
-        flex: 1;
-      }
-      #__next > * {
-        flex: 1;
-      }
-      /* ./App fit Height */ 
-    `}</style>
-  );
-}
 
 function Titulo(props) {
   const Tag = props.tag || 'h1';
@@ -37,7 +10,7 @@ function Titulo(props) {
       <Tag>{props.children}</Tag>
       <style jsx>{`
             ${Tag} {
-                color: ${appConfig.theme.colors.neutrals['050']};
+                color: ${appConfig.theme.colors.primary['300']};
                 font-size: 24px;
                 font-weight: 600;
             }
@@ -60,11 +33,21 @@ function Titulo(props) {
 // export default HomePage
 
 export default function PaginaInicial() {
-  const username = 'gutivalente';
+  const [username, setUsername] = React.useState('');
+  // const [userData, setUserData] = useState({});
+  const routing = useRouter();
+  // const fetchData = () => {
+  //   return fetch(`https://api.github.com/users/${username}`)
+  //     .then(res => res.json())
+  //     .then(data => console.log(data));
+  // }
+
+  // useEffect(() => {
+  //   fetchData();
+  // });
 
   return (
     <>
-      <GlobalStyle />
       <Box
         styleSheet={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -95,9 +78,13 @@ export default function PaginaInicial() {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               width: { xs: '100%', sm: '50%' }, textAlign: 'center', marginBottom: '32px',
             }}
+            onSubmit={event => {
+              event.preventDefault();
+              routing.push('/chat');
+            }}
           >
             <Titulo tag="h2">you are not welcome</Titulo>
-            <Text variant="body3" styleSheet={{ marginBottom: '32px', color: appConfig.theme.colors.neutrals[300] }}>
+            <Text variant="body3" styleSheet={{ marginBottom: '32px', color: appConfig.theme.colors.primary['600'] }}>
               {appConfig.name}
             </Text>
 
@@ -111,7 +98,14 @@ export default function PaginaInicial() {
                   backgroundColor: appConfig.theme.colors.neutrals['800'],
                 },
               }}
+              value={username}
+              onChange={event => {
+                const value = event.target.value;
+                setUsername(value);
+                // fetchData();
+              }}
             />
+
             <Button
               type='submit'
               label='Enter anyway'
@@ -145,10 +139,14 @@ export default function PaginaInicial() {
           >
             <Image
               styleSheet={{
-                borderRadius: '50%',
+                borderRadius: '8%',
                 marginBottom: '16px',
               }}
-              src={`https://github.com/${username}.png`}
+              src={
+                username.length > 2 ?
+                  `https://github.com/${username}.png` :
+                  'https://media1.giphy.com/media/l378vMZ1IbLcmj3H2/giphy.gif'
+              }
               alt=''
             />
             <Text
@@ -160,6 +158,7 @@ export default function PaginaInicial() {
                 borderRadius: '1000px'
               }}
             >
+              {/* {userData.name} */}
               {username}
             </Text>
           </Box>
