@@ -34,17 +34,20 @@ function Titulo(props) {
 
 export default function PaginaInicial() {
   const [username, setUsername] = React.useState('');
-  // const [userData, setUserData] = useState({});
+  const [userData, setUserData] = React.useState({});
+  const [waiting, setWaiting] = React.useState(false);
   const routing = useRouter();
-  // const fetchData = () => {
-  //   return fetch(`https://api.github.com/users/${username}`)
-  //     .then(res => res.json())
-  //     .then(data => console.log(data));
-  // }
 
-  // useEffect(() => {
-  //   fetchData();
-  // });
+  React.useEffect(() => {
+    if (waiting) {
+      return;
+    }
+    return fetch(`https://api.github.com/users/${username}`)
+      .then(async res => {
+        const data = await res.json();
+        setUserData(data);
+      })
+  }, [username, waiting]);
 
   return (
     <>
@@ -101,8 +104,11 @@ export default function PaginaInicial() {
               value={username}
               onChange={event => {
                 const value = event.target.value;
+                setWaiting(true);
                 setUsername(value);
-                // fetchData();
+                setTimeout(() => {
+                  setWaiting(false);
+                }, 1500);
               }}
             />
 
@@ -143,7 +149,7 @@ export default function PaginaInicial() {
                 marginBottom: '16px',
               }}
               src={
-                username.length > 2 ?
+                userData.name ?
                   `https://github.com/${username}.png` :
                   'https://media1.giphy.com/media/l378vMZ1IbLcmj3H2/giphy.gif'
               }
@@ -158,8 +164,7 @@ export default function PaginaInicial() {
                 borderRadius: '1000px'
               }}
             >
-              {/* {userData.name} */}
-              {username}
+              {userData.name || '????????'}
             </Text>
           </Box>
           {/* Photo Area */}

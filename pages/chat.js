@@ -1,25 +1,52 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
+import { createClient } from '@supabase/supabase-js';
 import React from 'react';
 import appConfig from '../config.json';
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMxMTI2MCwiZXhwIjoxOTU4ODg3MjYwfQ.J5Ice1r9WPUtwfjaNCYgQA9NmBSWeSsM43sf41a_Kgg';
+const SUPABASE_URL = 'https://okmvidlkjnjbzkgpvgvw.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
   const [text, setText] = React.useState('');
   const [messages, setMessages] = React.useState([]);
 
+  React.useEffect(() => {
+    supabaseClient
+      .from('mensagens')
+      .select('*')
+      .order('id', { ascending: false })
+      .then(({ data }) => {
+        setMessages(data);
+      });
+  }, []);
+
   function handleNewMessage(newText) {
     const newMessage = {
-      id: messages.length,
-      from: 'Gustavo',
-      text: newText
+      de: 'gutivalente',
+      texto: newText
     };
-    if (newText) {
-      setMessages([newMessage, ...messages]);
-      setText('');
-    }
+    insertNewMessage(newMessage);
+  }
+
+  function insertNewMessage(newMessage) {
+    supabaseClient
+      .from('mensagens')
+      .insert([newMessage])
+      .then(({ data }) => {
+        setMessages([data[0], ...messages]);
+        setText('');
+      });
   }
 
   function deleteMessage(id) {
-    setMessages(messages.filter(m => m.id !== id));
+    supabaseClient
+      .from('mensagens')
+      .delete()
+      .match({ id })
+      .then(({ data }) => {
+        setMessages(messages.filter(m => m.id !== id));
+      });
   }
 
   return (
@@ -72,7 +99,7 @@ export default function ChatPage() {
           >
 
             <TextField
-              placeholder='Insira sua mensagem aqui...'
+              placeholder='type here...'
               type='textarea'
               styleSheet={{
                 width: '100%',
@@ -92,7 +119,9 @@ export default function ChatPage() {
               onKeyPress={event => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
-                  handleNewMessage(text);
+                  if (text) {
+                    handleNewMessage(text);
+                  }
                 }
               }}
             />
@@ -106,9 +135,12 @@ export default function ChatPage() {
                 mainColorLight: appConfig.theme.colors.primary['400'],
                 mainColorStrong: appConfig.theme.colors.primary['600'],
               }}
+              disabled={!text}
               onClick={event => {
                 event.preventDefault();
-                handleNewMessage(text);
+                if (text) {
+                  handleNewMessage(text);
+                }
               }}
             />
 
@@ -180,12 +212,12 @@ function MessageList(props) {
                   display: 'inline-block',
                   marginRight: '8px',
                 }}
-                src={`https://github.com/gutivalente.png`}
+                src={`https://github.com/${thatMessage.de}.png`}
                 alt=''
               />
 
               <Text tag='strong'>
-                {thatMessage.from}
+                {thatMessage.de}
               </Text>
 
               <Text
@@ -215,7 +247,7 @@ function MessageList(props) {
               />
 
             </Box>
-            {thatMessage.text}
+            {thatMessage.texto}
           </Text>
         );
       })}
