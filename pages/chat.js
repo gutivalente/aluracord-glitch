@@ -1,17 +1,54 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
 import React from 'react';
 import appConfig from '../config.json';
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzMxMTI2MCwiZXhwIjoxOTU4ODg3MjYwfQ.J5Ice1r9WPUtwfjaNCYgQA9NmBSWeSsM43sf41a_Kgg';
 const SUPABASE_URL = 'https://okmvidlkjnjbzkgpvgvw.supabase.co';
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function listenToMessagesInRealTime(insertMessageLocally, deleteMessageLocally) {
+  return supabaseClient
+    .from('mensagens')
+    .on('*', payload => {
+      switch (payload.eventType) {
+        case 'INSERT':
+          insertMessageLocally(payload.new);
+          break;
+        case 'DELETE':
+          deleteMessageLocally(payload.old);
+      }
+    })
+    .subscribe();
+}
+
 export default function ChatPage() {
-  const [text, setText] = React.useState('');
+  const routing = useRouter();
+  const loggedUser = routing.query.username;
+  const [inputText, setInputText] = React.useState('');
   const [messages, setMessages] = React.useState([]);
 
   React.useEffect(() => {
+    loadMessagesFromClient();
+
+    listenToMessagesInRealTime(
+      newMessage => {
+        setMessages(currentMessages => {
+          return [newMessage, ...currentMessages];
+        });
+      },
+      oldMessage => {
+        setMessages(currentMessages => {
+          return currentMessages.filter(m => m.id !== oldMessage.id);
+        });
+      }
+    );
+
+  }, []);
+
+  function loadMessagesFromClient() {
     supabaseClient
       .from('mensagens')
       .select('*')
@@ -19,34 +56,30 @@ export default function ChatPage() {
       .then(({ data }) => {
         setMessages(data);
       });
-  }, []);
-
-  function handleNewMessage(newText) {
-    const newMessage = {
-      de: 'gutivalente',
-      texto: newText
-    };
-    insertNewMessage(newMessage);
   }
 
-  function insertNewMessage(newMessage) {
+  function handleNewMessage(text, sender) {
+    const newMessage = {
+      de: sender,
+      texto: text
+    };
+    insertMessageOnClient(newMessage);
+    setInputText('');
+  }
+
+  function insertMessageOnClient(newMessage) {
     supabaseClient
       .from('mensagens')
       .insert([newMessage])
-      .then(({ data }) => {
-        setMessages([data[0], ...messages]);
-        setText('');
-      });
+      .then(({ data }) => { });
   }
 
-  function deleteMessage(id) {
+  function deleteMessageOnClient(id) {
     supabaseClient
       .from('mensagens')
       .delete()
       .match({ id })
-      .then(({ data }) => {
-        setMessages(messages.filter(m => m.id !== id));
-      });
+      .then(({ data }) => { });
   }
 
   return (
@@ -88,7 +121,7 @@ export default function ChatPage() {
           }}
         >
 
-          <MessageList thatMessages={messages} thatDeleteMessage={deleteMessage} />
+          <MessageList thatMessages={messages} thatLoggedUser={loggedUser} thatDeleteMessage={deleteMessageOnClient} />
 
           <Box
             as='form'
@@ -111,20 +144,25 @@ export default function ChatPage() {
                 marginRight: '12px',
                 color: appConfig.theme.colors.neutrals['200'],
               }}
-              value={text}
+              value={inputText}
               onChange={event => {
                 const value = event.target.value;
-                setText(value);
+                setInputText(value);
               }}
               onKeyPress={event => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
-                  if (text) {
-                    handleNewMessage(text);
+                  if (inputText) {
+                    handleNewMessage(inputText, loggedUser);
                   }
                 }
               }}
             />
+
+            <ButtonSendSticker
+              onStickerClick={sticker => {
+                handleNewMessage(':sticker:' + sticker, loggedUser)
+              }} />
 
             <Button
               type='submit'
@@ -135,11 +173,11 @@ export default function ChatPage() {
                 mainColorLight: appConfig.theme.colors.primary['400'],
                 mainColorStrong: appConfig.theme.colors.primary['600'],
               }}
-              disabled={!text}
+              disabled={!inputText}
               onClick={event => {
                 event.preventDefault();
-                if (text) {
-                  handleNewMessage(text);
+                if (inputText) {
+                  handleNewMessage(inputText, loggedUser);
                 }
               }}
             />
@@ -231,23 +269,32 @@ function MessageList(props) {
                 {(new Date().toLocaleDateString())}
               </Text>
 
-              <Button
-                iconName='FaWindowClose'
-                variant='tertiary'
-                colorVariant='primary'
-                styleSheet={{
-                  position: 'absolute',
-                  right: '0'
-                }}
-                onClick={event => {
-                  event.preventDefault();
-                  const thisId = thatMessage.id;
-                  props.thatDeleteMessage(thisId);
-                }}
-              />
+              {
+                thatMessage.de === props.thatLoggedUser && (
+                  <Button
+                    iconName='FaWindowClose'
+                    variant='tertiary'
+                    colorVariant='primary'
+                    styleSheet={{
+                      position: 'absolute',
+                      right: '0'
+                    }}
+                    onClick={event => {
+                      event.preventDefault();
+                      const thisId = thatMessage.id;
+                      props.thatDeleteMessage(thisId);
+                    }}
+                  />
+                )
+              }
+
 
             </Box>
-            {thatMessage.texto}
+            {
+              thatMessage.texto.startsWith(':sticker:') ?
+                (<Image src={thatMessage.texto.replace(':sticker:', '')} alt='' />) :
+                (thatMessage.texto)
+            }
           </Text>
         );
       })}

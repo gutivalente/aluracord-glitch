@@ -33,21 +33,21 @@ function Titulo(props) {
 // export default HomePage
 
 export default function PaginaInicial() {
-  const [username, setUsername] = React.useState('');
-  const [userData, setUserData] = React.useState({});
-  const [waiting, setWaiting] = React.useState(false);
   const routing = useRouter();
+  const [username, setUsername] = React.useState('');
+  // const [userData, setUserData] = React.useState({});
+  // const [waiting, setWaiting] = React.useState(false);
 
-  React.useEffect(() => {
-    if (waiting) {
-      return;
-    }
-    return fetch(`https://api.github.com/users/${username}`)
-      .then(async res => {
-        const data = await res.json();
-        setUserData(data);
-      })
-  }, [username, waiting]);
+  // React.useEffect(() => {
+  //   if (waiting) {
+  //     return;
+  //   }
+  //   return fetch(`https://api.github.com/users/${username}`)
+  //     .then(async res => {
+  //       const data = await res.json();
+  //       setUserData(data);
+  //     })
+  // }, [username, waiting]);
 
   return (
     <>
@@ -83,7 +83,7 @@ export default function PaginaInicial() {
             }}
             onSubmit={event => {
               event.preventDefault();
-              routing.push('/chat');
+              routing.push(`/chat?username=${username}`);
             }}
           >
             <Titulo tag="h2">you are not welcome</Titulo>
@@ -104,11 +104,11 @@ export default function PaginaInicial() {
               value={username}
               onChange={event => {
                 const value = event.target.value;
-                setWaiting(true);
                 setUsername(value);
-                setTimeout(() => {
-                  setWaiting(false);
-                }, 1500);
+                // setWaiting(true);
+                // setTimeout(() => {
+                //   setWaiting(false);
+                // }, 1500);
               }}
             />
 
@@ -140,7 +140,7 @@ export default function PaginaInicial() {
               borderColor: appConfig.theme.colors.neutrals['999'],
               borderRadius: '10px',
               flex: 1,
-              minHeight: '240px',
+              height: '200px',
             }}
           >
             <Image
@@ -149,13 +149,13 @@ export default function PaginaInicial() {
                 marginBottom: '16px',
               }}
               src={
-                userData.name ?
+                username ?
                   `https://github.com/${username}.png` :
                   'https://media1.giphy.com/media/l378vMZ1IbLcmj3H2/giphy.gif'
               }
               alt=''
             />
-            <Text
+            {/* <Text
               variant="body4"
               styleSheet={{
                 color: appConfig.theme.colors.neutrals['200'],
@@ -165,7 +165,7 @@ export default function PaginaInicial() {
               }}
             >
               {userData.name || '????????'}
-            </Text>
+            </Text> */}
           </Box>
           {/* Photo Area */}
         </Box>
